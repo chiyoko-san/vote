@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>世界一どうでもいい投票所</title>
+<style>
+  :root {
+    --bg:#0f0e12; --surface:#1a1920; --surface2:#242230;
+    --text:#f2f0f5; --muted:#8d8a98; --hint:#5e5b6a;
+    --a:#ff6b9d; --a-bar:#ff6b9d; --a-bg:#2e1622;
+    --b:#5ec8ff; --b-bar:#5ec8ff; --b-bg:#10222e;
+    --accent:#ffd23f;
+    --border:rgba(255,255,255,0.1); --radius:14px; --radius-sm:9px;
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; padding:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+    -webkit-tap-highlight-color:transparent; }
+  .wrap { max-width:480px; margin:0 auto; padding:22px 16px 56px; }
+  .title { text-align:center; margin-bottom:16px; }
+  .title .label { font-size:11px; color:var(--muted); letter-spacing:0.18em; margin:0 0 6px; }
+  .title h1 { font-size:21px; font-weight:600; margin:0; }
+  .title .sub { font-size:12px; color:var(--hint); margin:6px 0 0; }
+
+  .profbar { display:flex; gap:8px; align-items:center; background:var(--surface);
+    border:0.5px solid var(--border); border-radius:var(--radius-sm); padding:8px 10px;
+    margin-bottom:14px; font-size:12px; }
+  .profbar .pinfo { flex:1; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .profbar button { border:0.5px solid var(--border); background:var(--surface2); color:var(--text);
+    border-radius:6px; padding:5px 10px; font-size:12px; cursor:pointer; }
+
+  .card { background:var(--surface); border:0.5px solid var(--border); border-radius:var(--radius);
+    padding:20px 18px; margin-bottom:16px; }
+  .qmeta { display:flex; justify-content:space-between; align-items:center; font-size:11px;
+    color:var(--hint); margin-bottom:14px; }
+  .qmeta .total { font-variant-numeric:tabular-nums; }
+  .vs-block { display:flex; flex-direction:column; gap:12px; margin-top:4px; }
+  .opt { border:1.5px solid var(--border); border-radius:var(--radius-sm); cursor:pointer;
+    overflow:hidden; position:relative; background:var(--surface2); transition:transform 0.05s, border-color 0.15s; }
+  .opt:active { transform:scale(0.99); }
+  .opt .fill { position:absolute; inset:0 auto 0 0; width:0%; transition:width 0.5s ease; opacity:0.28; }
+  .opt .content { position:relative; display:flex; justify-content:space-between; align-items:center; padding:16px; z-index:1; }
+  .opt .lbl { font-size:17px; font-weight:600; }
+  .opt .pct { font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; opacity:0; transition:opacity 0.3s; }
+  .opt.revealed .pct { opacity:1; }
+  .opt.a .fill { background:var(--a-bar); }
+  .opt.b .fill { background:var(--b-bar); }
+  .opt.a.mychoice { border-color:var(--a); }
+  .opt.b.mychoice { border-color:var(--b); }
+  .opt .mark { font-size:11px; color:var(--accent); margin-left:8px; display:none; }
+  .opt.mychoice .mark { display:inline; }
+  .opt .cnt { font-size:11px; color:var(--hint); margin-top:2px; font-variant-numeric:tabular-nums; }
+  .vs-divider { text-align:center; font-size:12px; color:var(--hint); font-weight:600; letter-spacing:0.1em; }
+
+  .filter { margin-top:16px; }
+  .filter .frow { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+  .chip { font-size:12px; padding:6px 11px; border-radius:999px; border:0.5px solid var(--border);
+    background:var(--surface2); color:var(--muted); cursor:pointer; white-space:nowrap; }
+  .chip.active { background:var(--accent); color:#000; border-color:var(--accent); font-weight:600; }
+  .subfilter { display:flex; gap:6px; flex-wrap:wrap; }
+  .subfilter select { font-size:12px; background:var(--surface2); color:var(--text);
+    border:0.5px solid var(--border); border-radius:6px; padding:6px 8px; }
+  .seg-note { font-size:11px; color:var(--hint); margin:8px 0 0; min-height:14px; }
+
+  .status { text-align:center; font-size:12px; color:var(--hint); margin:14px 0 0; min-height:16px; }
+  .actions { display:flex; gap:10px; }
+  .btn { flex:1; height:46px; border-radius:var(--radius-sm); font-size:14px; font-weight:600;
+    cursor:pointer; border:0.5px solid var(--border); background:var(--surface2); color:var(--text); }
+  .btn:active { transform:scale(0.98); }
+
+  .submit-block { margin-top:18px; }
+  .submit-block h3 { font-size:13px; font-weight:600; color:var(--muted); margin:0 0 10px; }
+  .submit-row { display:flex; gap:8px; margin-bottom:8px; }
+  .submit-row input { flex:1; height:42px; padding:0 12px; font-size:14px; background:var(--surface);
+    border:0.5px solid var(--border); border-radius:var(--radius-sm); color:var(--text); }
+  .submit-block .vs-mid { text-align:center; font-size:11px; color:var(--hint); margin:2px 0; }
+  .submit-block .sbtn { width:100%; height:44px; border-radius:var(--radius-sm); font-size:14px;
+    font-weight:600; cursor:pointer; border:0.5px solid var(--accent); background:#2a2410; color:var(--accent); }
+  .submit-err { color:var(--a); font-size:12px; min-height:14px; margin:4px 0 0; }
+
+  .toast { position:fixed; left:50%; top:22px; transform:translateX(-50%) translateY(-80px);
+    background:var(--accent); color:#000; font-weight:600; padding:10px 20px; border-radius:999px;
+    font-size:14px; opacity:0; transition:all 0.4s; z-index:60; pointer-events:none; max-width:90%; text-align:center; }
+  .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+  .foot { text-align:center; font-size:11px; color:var(--hint); margin-top:24px; line-height:1.7; }
+
+  .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,0.75); display:none;
+    align-items:center; justify-content:center; padding:16px; z-index:50; }
+  .modal-bg.show { display:flex; }
+  .modal { background:var(--surface); border:0.5px solid var(--border); border-radius:var(--radius);
+    padding:22px; width:100%; max-width:380px; }
+  .modal h2 { font-size:17px; font-weight:600; margin:0 0 6px; }
+  .modal p { font-size:13px; color:var(--muted); margin:0 0 16px; line-height:1.6; }
+  .field { margin-bottom:14px; }
+  .field label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+  .field select { width:100%; height:42px; padding:0 10px; font-size:14px; background:var(--bg);
+    border:0.5px solid var(--border); border-radius:8px; color:var(--text); }
+  .modal .row { display:flex; gap:8px; margin-top:6px; }
+  .modal .row button { flex:1; height:44px; border-radius:8px; font-size:14px; font-weight:600;
+    cursor:pointer; border:0.5px solid var(--border); }
+  .modal .primary { background:var(--a-bg); color:var(--a); border-color:var(--a); }
+  .modal .ghost { background:transparent; color:var(--muted); }
+  .privacy { font-size:11px; color:var(--hint); margin-top:12px; line-height:1.6; }
+</style>
+</head>
+<body>
+<div id="toast" class="toast"></div>
+
+<div class="wrap">
+  <div class="title">
+    <p class="label">WORLD'S MOST POINTLESS POLL</p>
+    <h1>世界一どうでもいい投票所</h1>
+    <p class="sub">全世界で投票中。でも、属性別に見ると意外と面白い。</p>
+  </div>
+
+  <div class="profbar">
+    <span class="pinfo" id="profInfo">プロフィール未設定</span>
+    <button id="editProf">設定</button>
+  </div>
+
+  <div class="card">
+    <div class="qmeta">
+      <span id="qIndex">お題 #—</span>
+      <span class="total" id="total">—票</span>
+    </div>
+    <div class="vs-block">
+      <div class="opt a" id="optA"><div class="fill" id="fillA"></div>
+        <div class="content"><div><span class="lbl" id="lblA">—</span>
+          <span class="mark">✓</span><div class="cnt" id="cntA"></div></div>
+          <span class="pct" id="pctA">0%</span></div></div>
+      <div class="vs-divider">VS</div>
+      <div class="opt b" id="optB"><div class="fill" id="fillB"></div>
+        <div class="content"><div><span class="lbl" id="lblB">—</span>
+          <span class="mark">✓</span><div class="cnt" id="cntB"></div></div>
+          <span class="pct" id="pctB">0%</span></div></div>
+    </div>
+
+    <div class="filter">
+      <div class="frow" id="segTabs">
+        <span class="chip active" data-seg="all">🌍 全体</span>
+        <span class="chip" data-seg="age">年代別</span>
+        <span class="chip" data-seg="gender">性別</span>
+        <span class="chip" data-seg="region">地方別</span>
+      </div>
+      <div class="subfilter" id="subWrap" style="display:none;">
+        <select id="subSelect"></select>
+      </div>
+      <p class="seg-note" id="segNote"></p>
+    </div>
+
+    <div class="status" id="status">接続中…</div>
+  </div>
+
+  <div class="actions">
+    <button class="btn" id="nextBtn">⏭ 次のお題へ</button>
+  </div>
+
+  <div class="submit-block">
+    <h3>💡 お題を投稿する（全世界に追加される）</h3>
+    <div class="submit-row"><input id="inA" placeholder="選択肢A（例: きのこの山）" maxlength="24" /></div>
+    <div class="vs-mid">VS</div>
+    <div class="submit-row"><input id="inB" placeholder="選択肢B（例: たけのこの里）" maxlength="24" /></div>
+    <button class="sbtn" id="submitBtn">この究極の二択を投稿</button>
+    <p class="submit-err" id="submitErr"></p>
+  </div>
+
+  <p class="foot">
+    投票は1お題につき1票（変更可）。結果は属性別に集計されます。<br>
+    集めるのは集計値だけ。個人を特定する情報は保存しません。
+  </p>
+</div>
+
+<div class="modal-bg" id="profBg">
+  <div class="modal">
+    <h2>あなたのことを少しだけ</h2>
+    <p>属性を選ぶと、年代・性別・地方ごとの投票傾向が見られるようになります。すべて任意。スキップしても投票できます。</p>
+    <div class="field">
+      <label>年代</label>
+      <select id="selAge">
+        <option value="">未選択</option>
+        <option value="10">10代</option><option value="20">20代</option>
+        <option value="30">30代</option><option value="40">40代</option>
+        <option value="50">50代</option><option value="60">60代</option>
+        <option value="70">70代以上</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>性別</label>
+      <select id="selGender">
+        <option value="">未選択</option>
+        <option value="male">男性</option>
+        <option value="female">女性</option>
+        <option value="other">その他・回答しない</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>住んでいる地域（都道府県）</label>
+      <select id="selPref"><option value="">未選択</option></select>
+    </div>
+    <div class="row">
+      <button class="ghost" id="skipProf">スキップ</button>
+      <button class="primary" id="saveProf">保存して投票</button>
+    </div>
+    <p class="privacy">※ プロフィールはこの端末内にのみ保存され、投票時は集計用のセグメント（年代/性別/地方）としてのみ送信されます。氏名や個人を特定する情報は一切集めません。</p>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, runTransaction, onValue, push, get }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+// ===== ここを自分のFirebase設定に書き換える =====
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT",
+};
+// ================================================
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const $ = id => document.getElementById(id);
+
+const PRESETS = [
+  ["きのこの山","たけのこの里"],["カレーは飲み物","カレーは食べ物"],
+  ["卵が先","ニワトリが先"],["夏派","冬派"],["朝シャワー","夜シャワー"],
+  ["猫派","犬派"],["パイナップルはピザに合う","合わない"],
+  ["味噌汁は飲み物","味噌汁はおかず"],["世界の終わりに寿司","ラーメン"],["きみは右脳派","左脳派"],
+];
+
+// 都道府県 → 地方マップ
+const PREFS = [
+  ["北海道","hokkaido"],["青森県","tohoku"],["岩手県","tohoku"],["宮城県","tohoku"],["秋田県","tohoku"],["山形県","tohoku"],["福島県","tohoku"],
+  ["茨城県","kanto"],["栃木県","kanto"],["群馬県","kanto"],["埼玉県","kanto"],["千葉県","kanto"],["東京都","kanto"],["神奈川県","kanto"],
+  ["新潟県","chubu"],["富山県","chubu"],["石川県","chubu"],["福井県","chubu"],["山梨県","chubu"],["長野県","chubu"],["岐阜県","chubu"],["静岡県","chubu"],["愛知県","chubu"],
+  ["三重県","kansai"],["滋賀県","kansai"],["京都府","kansai"],["大阪府","kansai"],["兵庫県","kansai"],["奈良県","kansai"],["和歌山県","kansai"],
+  ["鳥取県","chugoku"],["島根県","chugoku"],["岡山県","chugoku"],["広島県","chugoku"],["山口県","chugoku"],
+  ["徳島県","shikoku"],["香川県","shikoku"],["愛媛県","shikoku"],["高知県","shikoku"],
+  ["福岡県","kyushu"],["佐賀県","kyushu"],["長崎県","kyushu"],["熊本県","kyushu"],["大分県","kyushu"],["宮崎県","kyushu"],["鹿児島県","kyushu"],["沖縄県","kyushu"],
+];
+const REGION_LABEL = {hokkaido:"北海道",tohoku:"東北",kanto:"関東",chubu:"中部",kansai:"関西",chugoku:"中国",shikoku:"四国",kyushu:"九州・沖縄"};
+const AGE_LABEL = {"10":"10代","20":"20代","30":"30代","40":"40代","50":"50代","60":"60代","70":"70代以上"};
+const GENDER_LABEL = {male:"男性",female:"女性",other:"その他"};
+
+function prefToRegion(pref){ const f=PREFS.find(p=>p[0]===pref); return f?f[1]:null; }
+function uid(){ let u=localStorage.getItem("dv_uid"); if(!u){u="u"+Math.random().toString(36).slice(2,10);localStorage.setItem("dv_uid",u);} return u; }
+function esc(s){ return String(s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2400); }
+
+let profile = JSON.parse(localStorage.getItem("dv_profile")||"null"); // {age,gender,pref,region}
+let topics=[], currentId=null;
+let myVotes = JSON.parse(localStorage.getItem("dv_votes")||"{}");
+let curSeg="all", curSub=null, lastTopicData=null;
+
+// ---- プロフィールUI ----
+(function fillPref(){ const s=$("selPref"); PREFS.forEach(([n])=>{ const o=document.createElement("option"); o.value=n; o.textContent=n; s.appendChild(o); }); })();
+
+function renderProfBar(){
+  if(profile && (profile.age||profile.gender||profile.pref)){
+    const parts=[];
+    if(profile.age) parts.push(AGE_LABEL[profile.age]);
+    if(profile.gender) parts.push(GENDER_LABEL[profile.gender]);
+    if(profile.pref) parts.push(profile.pref);
+    $("profInfo").textContent="👤 "+parts.join(" · ");
+  } else { $("profInfo").textContent="プロフィール未設定（タップで設定）"; }
+}
+function openProf(){
+  $("selAge").value=profile?.age||"";
+  $("selGender").value=profile?.gender||"";
+  $("selPref").value=profile?.pref||"";
+  $("profBg").classList.add("show");
+}
+$("editProf").addEventListener("click",openProf);
+$("profInfo").addEventListener("click",openProf);
+$("saveProf").addEventListener("click",()=>{
+  const age=$("selAge").value, gender=$("selGender").value, pref=$("selPref").value;
+  profile={ age,gender,pref, region: pref?prefToRegion(pref):null };
+  localStorage.setItem("dv_profile",JSON.stringify(profile));
+  localStorage.setItem("dv_profile_asked","1");
+  $("profBg").classList.remove("show"); renderProfBar();
+  toast("プロフィールを保存した");
+});
+$("skipProf").addEventListener("click",()=>{
+  localStorage.setItem("dv_profile_asked","1");
+  $("profBg").classList.remove("show");
+});
+
+// ---- セグメントタブ ----
+$("segTabs").addEventListener("click",e=>{
+  const chip=e.target.closest(".chip"); if(!chip) return;
+  curSeg=chip.dataset.seg;
+  [...$("segTabs").children].forEach(c=>c.classList.toggle("active",c===chip));
+  buildSub(); renderCurrent();
+});
+function buildSub(){
+  const wrap=$("subWrap"), sel=$("subSelect");
+  if(curSeg==="all"){ wrap.style.display="none"; curSub=null; return; }
+  wrap.style.display="flex"; sel.innerHTML="";
+  let opts=[];
+  if(curSeg==="age") opts=Object.entries(AGE_LABEL);
+  if(curSeg==="gender") opts=Object.entries(GENDER_LABEL);
+  if(curSeg==="region") opts=Object.entries(REGION_LABEL);
+  opts.forEach(([v,l])=>{ const o=document.createElement("option"); o.value=v; o.textContent=l; sel.appendChild(o); });
+  // 自分の属性をデフォルト選択
+  if(curSeg==="age"&&profile?.age) sel.value=profile.age;
+  if(curSeg==="gender"&&profile?.gender) sel.value=profile.gender;
+  if(curSeg==="region"&&profile?.region) sel.value=profile.region;
+  curSub=sel.value||opts[0]?.[0];
+}
+$("subSelect").addEventListener("change",e=>{ curSub=e.target.value; renderCurrent(); });
+
+// ---- 集計取り出し ----
+function getCounts(t){
+  if(curSeg==="all") return [t.votesA||0, t.votesB||0, "全体"];
+  const seg=(t.seg&&t.seg[curSeg]&&t.seg[curSeg][curSub])||{a:0,b:0};
+  let label="";
+  if(curSeg==="age") label=AGE_LABEL[curSub];
+  if(curSeg==="gender") label=GENDER_LABEL[curSub];
+  if(curSeg==="region") label=REGION_LABEL[curSub];
+  return [seg.a||0, seg.b||0, label];
+}
+
+function renderCurrent(){ if(lastTopicData) renderResults(lastTopicData); }
+
+function renderResults(t){
+  lastTopicData=t;
+  $("lblA").textContent=t.a; $("lblB").textContent=t.b;
+  const [va,vb,segLabel]=getCounts(t);
+  const tot=va+vb;
+  const pa=tot?Math.round(va/tot*100):0, pb=tot?100-pa:0;
+  const my=myVotes[currentId], voted=!!my;
+  $("total").textContent=(curSeg==="all"?(((t.votesA||0)+(t.votesB||0))):tot).toLocaleString()+" 票";
+  ["A","B"].forEach(s=>$("opt"+s).classList.toggle("revealed",voted));
+  $("fillA").style.width=voted?pa+"%":"0%";
+  $("fillB").style.width=voted?pb+"%":"0%";
+  $("pctA").textContent=pa+"%"; $("pctB").textContent=pb+"%";
+  $("cntA").textContent=voted?va.toLocaleString()+"票":"";
+  $("cntB").textContent=voted?vb.toLocaleString()+"票":"";
+  $("optA").classList.toggle("mychoice",my==="a");
+  $("optB").classList.toggle("mychoice",my==="b");
+  if(curSeg==="all"){ $("segNote").textContent=voted?"":""; }
+  else { $("segNote").textContent = voted ? `「${segLabel}」の傾向（${tot.toLocaleString()}票）` : "投票すると属性別の傾向も見られます"; }
+  $("status").textContent = voted ? "投票済み（タップで変更／上のタブで属性別に見る）" : "さあ、どうでもいい二択に投票しよう";
+}
+
+let unsubTopic=null;
+function showTopic(id){
+  currentId=id;
+  if(unsubTopic) unsubTopic();
+  const idx=topics.findIndex(x=>x.id===id);
+  $("qIndex").textContent="お題 #"+(idx>=0?idx+1:"?");
+  unsubTopic=onValue(ref(db,"topics/"+id), snap=>{ const t=snap.val(); if(t) renderResults(t); });
+}
+
+function vote(side){
+  if(!currentId) return;
+  // 初回かつ未回答ならプロフィールを促す（必須ではない）
+  if(!localStorage.getItem("dv_profile_asked")){ openProf(); return; }
+  const prev=myVotes[currentId];
+  if(prev===side) return;
+  myVotes[currentId]=side; localStorage.setItem("dv_votes",JSON.stringify(myVotes));
+  const seg=profile||{};
+  runTransaction(ref(db,"topics/"+currentId), t=>{
+    if(!t) return t;
+    t.voters=t.voters||{};
+    const before=t.voters[uid()];
+    const decA=()=>t.votesA=Math.max(0,(t.votesA||0)-1), decB=()=>t.votesB=Math.max(0,(t.votesB||0)-1);
+    if(before==='a') decA(); if(before==='b') decB();
+    if(side==='a') t.votesA=(t.votesA||0)+1; if(side==='b') t.votesB=(t.votesB||0)+1;
+    // セグメント別集計
+    t.seg=t.seg||{};
+    const bump=(dim,key,s,d)=>{
+      if(!key) return;
+      t.seg[dim]=t.seg[dim]||{}; t.seg[dim][key]=t.seg[dim][key]||{a:0,b:0};
+      if(d){ if(d==='a') t.seg[dim][key].a=Math.max(0,t.seg[dim][key].a-1); if(d==='b') t.seg[dim][key].b=Math.max(0,t.seg[dim][key].b-1); }
+      if(s==='a') t.seg[dim][key].a=(t.seg[dim][key].a||0)+1;
+      if(s==='b') t.seg[dim][key].b=(t.seg[dim][key].b||0)+1;
+    };
+    // 以前のセグメントも引く必要があるが、属性は不変前提なので同じkeyで増減
+    bump('age', seg.age, side, before);
+    bump('gender', seg.gender, side, before);
+    bump('region', seg.region, side, before);
+    t.voters[uid()]=side;
+    return t;
+  });
+}
+$("optA").addEventListener("click",()=>vote('a'));
+$("optB").addEventListener("click",()=>vote('b'));
+
+$("nextBtn").addEventListener("click",()=>{
+  if(topics.length===0) return;
+  const idx=topics.findIndex(x=>x.id===currentId);
+  const next=topics[(idx+1)%topics.length];
+  runTransaction(ref(db,"meta/currentId"), ()=>next.id);
+  toast("⏭ 次のお題へ");
+});
+
+$("submitBtn").addEventListener("click", async ()=>{
+  const a=$("inA").value.trim().slice(0,24), b=$("inB").value.trim().slice(0,24);
+  if(!a||!b){ $("submitErr").textContent="両方の選択肢を入れてください"; return; }
+  if(a===b){ $("submitErr").textContent="同じ選択肢は二択になりません"; return; }
+  $("submitErr").textContent="";
+  const order=topics.length; const r=push(ref(db,"topics"));
+  await runTransaction(r, ()=>({a,b,votesA:0,votesB:0,order}));
+  $("inA").value=""; $("inB").value=""; toast("✅ お題を世界に追加した！");
+  runTransaction(ref(db,"meta/currentId"), ()=>r.key);
+});
+
+async function ensurePresets(){
+  const snap=await get(ref(db,"topics"));
+  if(!snap.exists()){
+    for(let i=0;i<PRESETS.length;i++){ const [a,b]=PRESETS[i]; const r=push(ref(db,"topics")); await runTransaction(r,()=>({a,b,votesA:0,votesB:0,order:i})); }
+  }
+}
+async function init(){
+  renderProfBar();
+  try{ await ensurePresets(); }
+  catch(e){ $("status").textContent="接続エラー: Firebase設定を確認してください"; return; }
+  onValue(ref(db,"topics"), snap=>{
+    const val=snap.val()||{};
+    topics=Object.entries(val).map(([id,v])=>({id,a:v.a,b:v.b,order:v.order??0})).sort((x,y)=>x.order-y.order);
+  });
+  onValue(ref(db,"meta/currentId"), async snap=>{
+    let id=snap.val();
+    if(!id){ const ts=await get(ref(db,"topics")); const first=ts.exists()?Object.keys(ts.val())[0]:null; if(first) runTransaction(ref(db,"meta/currentId"),()=>first); return; }
+    $("status").textContent="接続済み · 全世界とリアルタイム共有";
+    showTopic(id);
+  }, err=>{ $("status").textContent="接続エラー: Firebase設定を確認してください"; });
+
+  // 初回プロフィール案内
+  if(!localStorage.getItem("dv_profile_asked")) setTimeout(openProf,600);
+}
+init();
+</script>
+</body>
+</html>

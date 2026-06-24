@@ -1,0 +1,10 @@
+{
+  "rules": {
+    "meta": { ".read": true, ".write": true },
+    "topics": {
+      ".read": true,
+      ".write": true,
+      "$tid": { ".read": true, ".write": true }
+    }
+  }
+}
