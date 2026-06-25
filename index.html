@@ -2,125 +2,145 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>世界一どうでもいい投票所</title>
 <style>
   :root {
-    --bg:#0f0e12; --surface:#1a1920; --surface2:#242230;
-    --text:#f2f0f5; --muted:#8d8a98; --hint:#5e5b6a;
-    --a:#ff6b9d; --a-bar:#ff6b9d; --a-bg:#2e1622;
-    --b:#5ec8ff; --b-bar:#5ec8ff; --b-bg:#10222e;
-    --accent:#ffd23f;
-    --border:rgba(255,255,255,0.1); --radius:14px; --radius-sm:9px;
+    --bg:#f5f6f8; --surface:#ffffff; --surface2:#f0f1f4;
+    --text:#1d1d22; --muted:#6b6b76; --hint:#9a9aa4;
+    --a:#ff4d8d; --a-bar:#ff4d8d; --a-soft:#ffe3ee;
+    --b:#1f9fff; --b-bar:#1f9fff; --b-soft:#dcefff;
+    --accent:#ff9500; --accent-soft:#fff0db;
+    --border:#e6e7ec; --border2:#dcdde3;
+    --shadow:0 1px 3px rgba(20,20,40,0.06), 0 1px 2px rgba(20,20,40,0.04);
+    --shadow-lg:0 4px 16px rgba(20,20,40,0.10);
+    --radius:18px; --radius-sm:12px;
   }
-  * { box-sizing:border-box; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { margin:0; padding:0; background:var(--bg); color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
-    -webkit-tap-highlight-color:transparent; }
-  .wrap { max-width:480px; margin:0 auto; padding:22px 16px 56px; }
-  .title { text-align:center; margin-bottom:16px; }
-  .title .label { font-size:11px; color:var(--muted); letter-spacing:0.18em; margin:0 0 6px; }
-  .title h1 { font-size:21px; font-weight:600; margin:0; }
-  .title .sub { font-size:12px; color:var(--hint); margin:6px 0 0; }
+    font-size:16px; line-height:1.5; }
+  .wrap { max-width:440px; margin:0 auto; padding:20px 14px 64px; }
 
+  .title { text-align:center; margin-bottom:18px; }
+  .title h1 { font-size:22px; font-weight:700; margin:0; letter-spacing:-0.01em; }
+  .title .sub { font-size:13px; color:var(--muted); margin:6px 0 0; }
+
+  /* プロフィールバー */
   .profbar { display:flex; gap:8px; align-items:center; background:var(--surface);
-    border:0.5px solid var(--border); border-radius:var(--radius-sm); padding:8px 10px;
-    margin-bottom:14px; font-size:12px; }
-  .profbar .pinfo { flex:1; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .profbar button { border:0.5px solid var(--border); background:var(--surface2); color:var(--text);
-    border-radius:6px; padding:5px 10px; font-size:12px; cursor:pointer; }
+    border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 12px;
+    margin-bottom:14px; box-shadow:var(--shadow); }
+  .profbar .pinfo { flex:1; color:var(--muted); font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .profbar button { border:1px solid var(--border2); background:var(--surface); color:var(--text);
+    border-radius:8px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer; }
+  .profbar button:active { background:var(--surface2); }
 
-  /* ジャンルフィルタ */
-  .genre-bar { display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-bottom:14px; }
-  .genre-bar::-webkit-scrollbar { height:0; }
-  .gchip { font-size:13px; padding:7px 13px; border-radius:999px; border:0.5px solid var(--border);
-    background:var(--surface2); color:var(--muted); cursor:pointer; white-space:nowrap; flex-shrink:0; }
-  .gchip.active { background:var(--accent); color:#000; border-color:var(--accent); font-weight:600; }
+  /* ジャンルバー（横スクロール） */
+  .genre-bar { display:flex; gap:8px; overflow-x:auto; padding:2px 0 10px; margin:0 -14px 8px; padding-left:14px; padding-right:14px;
+    scroll-snap-type:x proximity; }
+  .genre-bar::-webkit-scrollbar { display:none; }
+  .gchip { font-size:14px; padding:9px 16px; border-radius:999px; border:1px solid var(--border2);
+    background:var(--surface); color:var(--muted); cursor:pointer; white-space:nowrap; flex-shrink:0;
+    font-weight:600; box-shadow:var(--shadow); scroll-snap-align:start; }
+  .gchip.active { background:var(--text); color:#fff; border-color:var(--text); }
 
   /* お題リスト */
-  .list { display:flex; flex-direction:column; gap:10px; }
-  .topic-card { background:var(--surface); border:0.5px solid var(--border); border-radius:var(--radius);
-    padding:14px 16px; cursor:pointer; transition:border-color 0.15s, transform 0.05s; }
-  .topic-card:active { transform:scale(0.995); }
-  .topic-card.open { border-color:var(--accent); }
-  .tc-head { display:flex; justify-content:space-between; align-items:center; gap:8px; }
-  .tc-genre { font-size:11px; color:var(--accent); white-space:nowrap; }
-  .tc-total { font-size:11px; color:var(--hint); font-variant-numeric:tabular-nums; white-space:nowrap; }
-  .tc-q { font-size:15px; font-weight:600; margin:8px 0 0; line-height:1.4; }
-  .tc-mini { display:flex; gap:6px; margin-top:10px; }
-  .tc-mini .m { flex:1; font-size:12px; color:var(--muted); padding:7px 10px; border-radius:7px;
-    background:var(--surface2); border:0.5px solid var(--border); text-align:center;
-    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .tc-mini .m.a { color:var(--a); } .tc-mini .m.b { color:var(--b); }
-  .tc-voted { font-size:11px; color:var(--hint); margin-top:8px; }
+  .list { display:flex; flex-direction:column; gap:12px; }
+  .topic-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:16px; cursor:pointer; box-shadow:var(--shadow); transition:box-shadow 0.2s, transform 0.06s; }
+  .topic-card:active { transform:scale(0.997); }
+  .topic-card.open { box-shadow:var(--shadow-lg); border-color:var(--border2); }
+  .tc-head { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px; }
+  .tc-genre { font-size:12px; color:var(--accent); font-weight:700; background:var(--accent-soft);
+    padding:4px 10px; border-radius:999px; white-space:nowrap; }
+  .tc-total { font-size:12px; color:var(--hint); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .tc-q { font-size:17px; font-weight:700; margin:0; line-height:1.45; letter-spacing:-0.01em; }
+  .tc-q .vs { color:var(--hint); font-weight:600; font-size:14px; margin:0 4px; }
+  .tc-mini { display:flex; gap:8px; margin-top:12px; }
+  .tc-mini .m { flex:1; font-size:13px; font-weight:600; padding:10px 12px; border-radius:10px;
+    text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tc-mini .m.a { color:var(--a); background:var(--a-soft); }
+  .tc-mini .m.b { color:var(--b); background:var(--b-soft); }
+  .tc-voted { font-size:13px; color:var(--muted); margin:12px 0 0; font-weight:500; }
+  .tc-voted b { color:var(--text); }
 
-  /* 展開された投票UI */
-  .vote-area { margin-top:12px; display:none; }
+  /* 投票エリア */
+  .vote-area { margin-top:14px; display:none; }
   .topic-card.open .vote-area { display:block; }
-  .opt { border:1.5px solid var(--border); border-radius:var(--radius-sm); cursor:pointer;
-    overflow:hidden; position:relative; background:var(--surface2); margin-bottom:8px;
-    transition:transform 0.05s, border-color 0.15s; }
+  .opt { border:2px solid var(--border2); border-radius:14px; cursor:pointer; overflow:hidden;
+    position:relative; background:var(--surface); margin-bottom:10px; transition:transform 0.06s, border-color 0.15s; }
   .opt:active { transform:scale(0.99); }
-  .opt .fill { position:absolute; inset:0 auto 0 0; width:0%; transition:width 0.5s ease; opacity:0.28; }
-  .opt .content { position:relative; display:flex; justify-content:space-between; align-items:center; padding:13px 14px; z-index:1; }
-  .opt .lbl { font-size:15px; font-weight:600; }
-  .opt .pct { font-size:14px; font-weight:600; font-variant-numeric:tabular-nums; opacity:0; transition:opacity 0.3s; }
+  .opt .fill { position:absolute; inset:0 auto 0 0; width:0%; transition:width 0.6s cubic-bezier(.2,.8,.2,1); opacity:0.16; }
+  .opt .content { position:relative; display:flex; justify-content:space-between; align-items:center;
+    padding:16px; z-index:1; min-height:56px; }
+  .opt .lbl { font-size:16px; font-weight:700; }
+  .opt .pct { font-size:18px; font-weight:800; font-variant-numeric:tabular-nums; opacity:0;
+    transition:opacity 0.3s; }
   .opt.revealed .pct { opacity:1; }
-  .opt.a .fill { background:var(--a-bar); } .opt.b .fill { background:var(--b-bar); }
-  .opt.a.mychoice { border-color:var(--a); } .opt.b.mychoice { border-color:var(--b); }
-  .opt .mark { font-size:11px; color:var(--accent); margin-left:6px; display:none; }
+  .opt.a .fill { background:var(--a-bar); } .opt.a .pct { color:var(--a); }
+  .opt.b .fill { background:var(--b-bar); } .opt.b .pct { color:var(--b); }
+  .opt.a.mychoice { border-color:var(--a); }
+  .opt.b.mychoice { border-color:var(--b); }
+  .opt .mark { font-size:11px; color:#fff; margin-left:8px; display:none; font-weight:700;
+    background:var(--accent); padding:2px 7px; border-radius:999px; vertical-align:1px; }
   .opt.mychoice .mark { display:inline; }
-  .opt .cnt { font-size:11px; color:var(--hint); margin-top:2px; font-variant-numeric:tabular-nums; }
+  .opt .cnt { font-size:12px; color:var(--hint); margin-top:3px; font-variant-numeric:tabular-nums; }
 
-  .seg-filter { margin-top:6px; }
-  .seg-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
-  .schip { font-size:11px; padding:5px 10px; border-radius:999px; border:0.5px solid var(--border);
-    background:var(--surface2); color:var(--muted); cursor:pointer; }
-  .schip.active { background:var(--accent); color:#000; border-color:var(--accent); font-weight:600; }
+  /* セグメントフィルタ */
+  .seg-filter { margin-top:14px; padding-top:14px; border-top:1px solid var(--border); }
+  .seg-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+  .schip { font-size:12px; padding:7px 13px; border-radius:999px; border:1px solid var(--border2);
+    background:var(--surface); color:var(--muted); cursor:pointer; font-weight:600; }
+  .schip.active { background:var(--accent); color:#fff; border-color:var(--accent); }
   .seg-sub { display:none; gap:6px; }
-  .seg-sub select { font-size:12px; background:var(--surface2); color:var(--text);
-    border:0.5px solid var(--border); border-radius:6px; padding:5px 8px; }
-  .seg-note { font-size:11px; color:var(--hint); margin:6px 0 0; min-height:13px; }
+  .seg-sub select { font-size:14px; background:var(--surface); color:var(--text);
+    border:1px solid var(--border2); border-radius:9px; padding:9px 12px; width:100%; }
+  .seg-note { font-size:12px; color:var(--muted); margin:10px 0 0; min-height:14px; }
 
-  .empty-list { text-align:center; color:var(--hint); font-size:13px; padding:30px 0; }
+  .empty-list { text-align:center; color:var(--hint); font-size:14px; padding:40px 0; }
 
   /* 投稿 */
-  .submit-block { margin-top:22px; padding-top:18px; border-top:0.5px solid var(--border); }
-  .submit-block h3 { font-size:13px; font-weight:600; color:var(--muted); margin:0 0 10px; }
-  .submit-row { display:flex; gap:8px; margin-bottom:8px; }
-  .submit-row input { flex:1; height:42px; padding:0 12px; font-size:14px; background:var(--surface);
-    border:0.5px solid var(--border); border-radius:var(--radius-sm); color:var(--text); }
-  .submit-row select { width:100%; height:42px; padding:0 10px; font-size:14px; background:var(--surface);
-    border:0.5px solid var(--border); border-radius:var(--radius-sm); color:var(--text); }
-  .submit-block .vs-mid { text-align:center; font-size:11px; color:var(--hint); margin:2px 0; }
-  .submit-block .sbtn { width:100%; height:44px; border-radius:var(--radius-sm); font-size:14px;
-    font-weight:600; cursor:pointer; border:0.5px solid var(--accent); background:#2a2410; color:var(--accent); }
-  .submit-err { color:var(--a); font-size:12px; min-height:14px; margin:4px 0 0; }
+  .submit-block { margin-top:26px; padding:18px 16px; background:var(--surface);
+    border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); }
+  .submit-block h3 { font-size:15px; font-weight:700; color:var(--text); margin:0 0 14px; }
+  .submit-row { margin-bottom:10px; }
+  .submit-row input, .submit-row select { width:100%; height:50px; padding:0 14px; font-size:16px;
+    background:var(--surface); border:1px solid var(--border2); border-radius:12px; color:var(--text); }
+  .submit-row input:focus, .submit-row select:focus { outline:none; border-color:var(--b); }
+  .submit-block .vs-mid { text-align:center; font-size:12px; color:var(--hint); margin:4px 0; font-weight:700; }
+  .submit-block .sbtn { width:100%; height:52px; border-radius:13px; font-size:16px; font-weight:700;
+    cursor:pointer; border:none; background:var(--a); color:#fff; margin-top:4px; }
+  .submit-block .sbtn:active { background:#e63d7c; }
+  .submit-err { color:var(--a); font-size:13px; min-height:16px; margin:8px 0 0; font-weight:600; }
 
-  .toast { position:fixed; left:50%; top:22px; transform:translateX(-50%) translateY(-80px);
-    background:var(--accent); color:#000; font-weight:600; padding:10px 20px; border-radius:999px;
-    font-size:14px; opacity:0; transition:all 0.4s; z-index:60; pointer-events:none; max-width:90%; text-align:center; }
+  .toast { position:fixed; left:50%; top:18px; transform:translateX(-50%) translateY(-100px);
+    background:var(--text); color:#fff; font-weight:600; padding:12px 22px; border-radius:999px;
+    font-size:14px; opacity:0; transition:all 0.4s cubic-bezier(.2,.8,.2,1); z-index:60; pointer-events:none;
+    max-width:90%; text-align:center; box-shadow:var(--shadow-lg); }
   .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
-  .foot { text-align:center; font-size:11px; color:var(--hint); margin-top:24px; line-height:1.7; }
-  .status { text-align:center; font-size:12px; color:var(--hint); margin:10px 0 0; min-height:16px; }
+  .status { text-align:center; font-size:12px; color:var(--hint); margin:16px 0 0; min-height:16px; }
+  .foot { text-align:center; font-size:12px; color:var(--hint); margin-top:20px; line-height:1.7; }
 
-  .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,0.75); display:none;
-    align-items:center; justify-content:center; padding:16px; z-index:50; }
+  /* モーダル */
+  .modal-bg { position:fixed; inset:0; background:rgba(20,20,40,0.4); backdrop-filter:blur(2px);
+    display:none; align-items:flex-end; justify-content:center; padding:0; z-index:50; }
   .modal-bg.show { display:flex; }
-  .modal { background:var(--surface); border:0.5px solid var(--border); border-radius:var(--radius);
-    padding:22px; width:100%; max-width:380px; }
-  .modal h2 { font-size:17px; font-weight:600; margin:0 0 6px; }
-  .modal p { font-size:13px; color:var(--muted); margin:0 0 16px; line-height:1.6; }
+  .modal { background:var(--surface); border-radius:22px 22px 0 0; padding:24px 20px calc(24px + env(safe-area-inset-bottom));
+    width:100%; max-width:440px; box-shadow:0 -4px 24px rgba(20,20,40,0.15);
+    animation:slideUp 0.25s cubic-bezier(.2,.8,.2,1); }
+  @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+  .modal h2 { font-size:19px; font-weight:700; margin:0 0 8px; }
+  .modal p { font-size:14px; color:var(--muted); margin:0 0 18px; line-height:1.6; }
   .field { margin-bottom:14px; }
-  .field label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
-  .field select { width:100%; height:42px; padding:0 10px; font-size:14px; background:var(--bg);
-    border:0.5px solid var(--border); border-radius:8px; color:var(--text); }
-  .modal .row { display:flex; gap:8px; margin-top:6px; }
-  .modal .row button { flex:1; height:44px; border-radius:8px; font-size:14px; font-weight:600;
-    cursor:pointer; border:0.5px solid var(--border); }
-  .modal .primary { background:var(--a-bg); color:var(--a); border-color:var(--a); }
-  .modal .ghost { background:transparent; color:var(--muted); }
-  .privacy { font-size:11px; color:var(--hint); margin-top:12px; line-height:1.6; }
+  .field label { display:block; font-size:13px; color:var(--muted); margin-bottom:7px; font-weight:600; }
+  .field select { width:100%; height:50px; padding:0 12px; font-size:16px; background:var(--surface);
+    border:1px solid var(--border2); border-radius:12px; color:var(--text); }
+  .modal .row { display:flex; gap:10px; margin-top:8px; }
+  .modal .row button { flex:1; height:52px; border-radius:13px; font-size:16px; font-weight:700; cursor:pointer; }
+  .modal .primary { background:var(--a); color:#fff; border:none; }
+  .modal .primary:active { background:#e63d7c; }
+  .modal .ghost { background:var(--surface2); color:var(--muted); border:none; }
+  .privacy { font-size:11px; color:var(--hint); margin-top:14px; line-height:1.6; }
 </style>
 </head>
 <body>
@@ -128,9 +148,8 @@
 
 <div class="wrap">
   <div class="title">
-    <p class="label">WORLD'S MOST POINTLESS POLL</p>
     <h1>世界一どうでもいい投票所</h1>
-    <p class="sub">気になる二択を選んで投票。属性別に見ると意外と面白い。</p>
+    <p class="sub">気になる二択を選んで投票。属性別に見ると面白い。</p>
   </div>
 
   <div class="profbar">
@@ -143,7 +162,7 @@
   <div class="list" id="list"><p class="empty-list">読み込み中…</p></div>
 
   <div class="submit-block">
-    <h3>💡 お題を投稿する（全世界に追加される）</h3>
+    <h3>💡 お題を投稿する</h3>
     <div class="submit-row"><select id="inGenre"></select></div>
     <div class="submit-row"><input id="inA" placeholder="選択肢A（例: きのこの山）" maxlength="24" /></div>
     <div class="vs-mid">VS</div>
@@ -155,7 +174,7 @@
   <div class="status" id="status">接続中…</div>
 
   <p class="foot">
-    投票は1お題につき1票（変更可）。結果は属性別に集計されます。<br>
+    投票は1お題につき1票（変更可）。<br>
     集めるのは集計値だけ。個人を特定する情報は保存しません。
   </p>
 </div>
@@ -163,7 +182,7 @@
 <div class="modal-bg" id="profBg">
   <div class="modal">
     <h2>あなたのことを少しだけ</h2>
-    <p>属性を選ぶと、年代・性別・地方ごとの投票傾向が見られるようになります。すべて任意。スキップしても投票できます。</p>
+    <p>属性を選ぶと、年代・性別・地方ごとの投票傾向が見られます。すべて任意。スキップしても投票できます。</p>
     <div class="field">
       <label>年代</label>
       <select id="selAge">
